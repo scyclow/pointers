@@ -3,6 +3,41 @@
  // illusion of choice
  // maddening inevitability
  // an attempt to make sense of complexity
+ // Pointers
+
+
+
+
+
+ /* POINTERS -> Custom minting contract
+    100 mints
+    each mint has random level of chaos, different color palette
+    each token is sent to a dead wallet on mint
+    buyer gets a proxy/derivative token that points to the original token
+
+
+
+
+ */
+
+
+
+
+
+ /*
+  TODO
+    - reassess colors
+    - empty column/row bug
+    - do a few more renders, make sure everything fine tuned
+    - make dots a little smaller
+    - courser paper?
+    - smudges should be a little more intelligent
+    - maybe arrow angle drift isn't as high on grids
+    - dashed lines more irregular intervals
+    - grids way less likely for higher chaos
+    - make carrot angle variable for higher chaos
+
+ */
 
 
 
@@ -36,6 +71,7 @@ function keyPressed() {
 }
 
 
+let __vectorRanges
 function setup() {
   SIZE = min(innerWidth, innerHeight)
   __canvas = createCanvas(SIZE, SIZE)
@@ -54,8 +90,9 @@ function setup() {
   colorMode(HSB, 360, 100, 100)
 
   CELLS = chance(
-    [2, rndint(5, 24)],
-    [1, rndint(24, 48)],
+    [1, rndint(5, 8)],
+    [6, rndint(8, 20)],
+    [3, rndint(20, 48)],
   )
 
 
@@ -67,273 +104,204 @@ function setup() {
   CELL_Y = rndint(2, CELLS)
   POINT_Y = CELL_Y * CELL_SIZE //- CELL_SIZE/2
 
-  ARROW_DRIFT = chance(
-    [1, rnd(3, 5)],
-    [3, rnd(1, 3)],
-    [5, rnd(0, 1)],
-    [1, rnd(0, 1)]
-  )
-  HUE = rnd(360)
 
-  MAX_VECTOR_RANGES = 10000
+  HUE = rnd(-10, 10)
+
   // MAX_VECTOR_RANGES = rnd(3, 300)
   // DOT_STROKE_MAX = 4
-  DOT_STROKE_MAX = 1
 
-  ARROW_MIN_LEN = 1
-  ARROW_MAX_LEN = 5
+  // STROKE_VARIANCE = 1.5
+
+  MINT_SIZE = 64
+
+
+  MAX_VECTOR_RANGES = chance(
+    [1, rnd(3, 20)],
+    [4, rnd(20, 200)],
+    [10, rnd(200, 1000)],
+    [10, 10000]
+  )
+
+  CHAOS = (Number(tokenData.tokenId) % 1000000) / MINT_SIZE
+
+  DASH_RATE = chance(
+    [3, 1],
+    [6, rnd()],
+    [55, 0]
+  )
+
+  LAYOUT = chance(
+    [(1 - CHAOS**15)*0.9, 0], // standard
+    [(1 - CHAOS**15)*0.1, 1], // grid
+    [CHAOS**15, 2] // random
+  )
+
+  ARROW_MIN_LEN = prb(0.1) ? CELLS : rndint(1, 5)
+  ARROW_MAX_LEN = prb(0.1) ? CELLS : rndint(1, 5) + ARROW_MIN_LEN
+  ARROW_DRIFT = map(CHAOS, 0, 1, 0, 10)
+  ARROW_ANGLE_DRIFT_AMOUNT = map(CHAOS, 0, 1, 0, 1)
+  ARROW_ANGLE_VAR = map(CHAOS, 0, 1, 0, 0.8)
+  LAZY_CARROTS = prb(CHAOS)
+
+
+  SKIP_RATE = map(CHAOS, 0, 1, 0, 0.2)
+  STROKE_VARIANCE = map(CHAOS, 0, 1, 0, 0.75)
+  STROKE_TURBULENCE = map(CHAOS, 0, 1, 0, 0.15)
+  SMUDGE = prb(CHAOS**3) ? map(CHAOS, 0, 1, 0, 0.001)*CHAOS**3 : 0
+
+  DOT_STROKE_MIN = rndint(1, 7*min(1, 24/CELLS))
+  DOT_STROKE_MAX = min(DOT_STROKE_MIN + rndint(4*CHAOS), 9)
+  SHOW_GRID = false
+
+  COLORS = chance(
+    // [250, { // night mode
+    [.25, { // night mode
+      stroke: 230,
+      bg: 15,
+      dot: color(0, 57, 90, .95),
+      // dot: color(0, 73, 100, .95),
+      bgS: () => rnd(8, 18)
+    }],
+
+    [.75, { // paper
+    // [100, { // paper
+      stroke: prb(0.7) ? color(0, 0, rnd(10, 20)) : color(210, 65, 30),
+      bg: color(HUE + 30, 5, 97),
+      dot: color(0, 78, 95, .85),
+      bgS: (d) => color(
+        HUE + rnd(25, 35),
+        rnd(3, 7) + 0.5*d,
+        rnd(93, 100) - 0.5*d
+      )
+    }],
+
+    // [111, { // orange
+    // // [0.1875/5, { // orange
+    //   stroke: color(210, 80, 30),
+    //   bg: color(hfix(30), 85, 95),
+    //   dot: color(165, 80, 45),
+    //   bgS: () => color(hfix(30 + rnd(-5, 5)), 85, 95)
+    // }],
+
+    // // [0.1875/5, { // yellow/purple
+    // [111, { // yellow/purple
+    //   stroke: color(318, 62, 48),
+    //   bg: color(hfix(296+120), 60, 96),
+    //   dot: color(hfix(200), 85, 75),
+    //   bgS: () => color(hfix(296+120 + rnd(-5, 5)), 60, 96)
+    // }],
+
+    // [0.1875/5, { // night mode
+    //   stroke: color(171, 100, 100),
+    //   bg: color(hfix(330), 90, 80),
+    //   dot: color(hfix(240), 100, 50),
+    //   bgS: () => color(hfix(330 + rnd(-5, 5)), 90, 90)
+    // }],
+
+    // [0.1875/5, { // rgb
+    // // [111, { // rgb
+    //   stroke: color(77, 63, 95),
+    //   // stroke: color(hfix(203), 80, 30),
+    //   bg: color(185, 100, 63),
+    //   dot: color(hfix(323), 98, 92),
+    //   // dot: color(hfix(323), 98, 92),
+    //   // bgS: () => color(hfix(77 + rnd(-5, 5)), 63, 95)
+    //   bgS: () => color(hfix(185 + rnd(-5, 5)), 100, 63)
+    // }],
+
+
+
+    // // [111, { // bright rgb
+    // [0.1, { // bright rgb
+    //   stroke: color(270, 90, 30),
+    //   dot: color(11, 96, 73),
+    //   bg: color(185, 100, 63),
+    //   bgS: () => color(hfix(185 + rnd(-5, 5)), 100, 63)
+    // }],
+
+
+  )
+
+
+
+
+  // CELLS = rndint(24, 48)
+
+  // ARROW_MIN_LEN = 1
+  // ARROW_MAX_LEN = 5
+  // ARROW_DRIFT = 5
+  // ARROW_ANGLE_DRIFT_AMOUNT = 1
+  // DOT_STROKE_MAX = 1
+  // LAZY_CARROTS = true
+  // SKIP_RATE = 0.2
+  // STROKE_VARIANCE = 1.5
+  // STROKE_TURBULENCE = 0.15
+
+
+
   // ARROW_MIN_LEN = CELLS
   // ARROW_MAX_LEN = CELLS
-
-  HIDE_CARROTS = false
-  HIDE_LINES = false
-  SKIP_RATE = 0
-  LAZY_CARROTS = false
-  // HIDE_LINES = true
-  // HIDE_CARROTS = true
-  // SKIP_RATE = 0.15
-
-  // LAZY_CARROTS = true
+  // ARROW_DRIFT = 0
+  // ARROW_ANGLE_DRIFT_AMOUNT = 0
+  // DOT_STROKE_MAX = 1
+  // LAZY_CARROTS = false
+  // SKIP_RATE = 0
+  // STROKE_VARIANCE = 0
+  // STROKE_TURBULENCE = 0
 
 
 
-
-  FAST = false
-}
-
-
-function draw() {
-
-  noLoop()
-  scale(SCALE_ADJ)
-  drawBg()
-  // drawBorder()
-  drawDot()
-
-
-
-
-  // debug mode
-  // eachCell((x, y) => circle(x, y, 1))
+  // ARROW_MIN_LEN = prb(0.2) ? CELLS : rnd(1, 16)
+  // ARROW_MAX_LEN = ARROW_MIN_LEN + rnd(1, 8)
+  // SKIP_RATE = prb(0.2) ? rnd(0, 0.75) : 0
+  // LAZY_CARROTS = prb(0.3)
+  // ARROW_ANGLE_DRIFT_AMOUNT = prb(0.5) ? rnd(0.1, 1.5) : 0
+  // LAZY_CARROTS = prb(0.5)
+  // ARROW_DRIFT = rnd(0, 5)
+  // DOT_STROKE_MAX = rnd(1, 2)
 
 
 
 
   /*
 
-    variations
-      8*6*3*2*2
-      layouts
-      colors
-      density
-      digital/skeumorphic
-      uniform/variable
-      single/long/short
+    all quarters same rule
+    half/half
+    half/quarters
+    quarters
+      - all n/s
+        - grid
+        - vector
+        - single line
+      - all e/w
+        - grid
+        - vector
+        - single line
+      - all diagonal
+      - interlocking vector
 
-    rare strategies
-      - arrows in random directions
-      - all arrows pointing in opposite direction
-      - all arrows pointing in exact direction
-
-
-    strategy1
-      - two sections single direction
-        uniform
-        differing lengths
-
-    strategy2
-      - three sections single direction
-        uniform
-        differing lengths
-
-    strategy3
-      - four sections single direction
-        uniform
-        differing lengths
-
-    strategy4
-      - only diagonal
-
-    strategy5
-      - random horizontal/vertical
-
-    strategy6
-      - random diagonal/horizontal/vertical
-
-    strategy7
-      - one vector with random turns
-      - trace the edge of that vector
-
-    strategy8
-      - base n/s/e/w vectors
-      - choose one base vector
-        - create some vectors around it pointing in the same direction
-          ex.   ---->
-                ====>
-                ---->
-                ---->
-
-        - vectors keep going until they hit another vector
-        - choose another base vector, and repeat
-          ex.
-                ||||||||
-                vvvvv|||
-                ---->vvv
-                ---->o
-                ---->
-                ---->
-
-                ||||||||
-                vvvvv|||
-                ---->vvv
-                ---->o
-                ---->^
-                ---->|
-                ^^^^^|
-                ||||||
-
-        - switch vector expansions every once in a while to get a staggered effect
+      - grid random
+      - grid directional
+      - random placement
+        - grid-random
+        - directional
 
 
-                ||||||||<--
-                vvvvv|||<--
-                ---->vvv<--
-                ---->o<----
-                ---->^<----
-                ---->|<----
-                ^^^^^|^<---
-                |||||||^<--
-                ||||||||<--
 
-      strategy9
-        - draw a random direction within the 90 deg frame
+
+
+
   */
 
 
 
-  fill(15)
-  stroke(15)
-
-
-
-  const drawWestVector = (row) => {
-    __dotStroke = rnd(1, DOT_STROKE_MAX)
-
-    const y = row
-    let x1, x2
-
-    for (let x = CELLS-1; x >= CELL_X; x--) {
-      if (!getCell(x, y) && !x1) x1 = x
-      if (getCell(x, y) && x1) {
-        x2 = x + 1
-        break
-      }
-    }
-
-    if (x1 === x2) return
-
-    for (let x = x1; x >= x2; x--) setCell(x, y, 'w')
-
-    let xCursor = x1
-    while (xCursor >= x2) {
-      let len = min(rndint(ARROW_MIN_LEN, ARROW_MAX_LEN), xCursor - x2)
-      if (xCursor - len === x2 + 1) len += 1
-
-      arrow(coord(xCursor), coord(y), coord(xCursor - len), coord(y))
-      xCursor -= (len+1)
-    }
-  }
-
-  const drawEastVector = (row) => {
-    __dotStroke = rnd(1, DOT_STROKE_MAX)
-
-    const y = row
-    let x1, x2
-
-    for (let x = 1; x <= CELL_X; x++) {
-      if (!getCell(x, y) && !x1) x1 = x
-      if (getCell(x, y) && x1) {
-        x2 = x - 1
-        break
-      }
-    }
-
-    if (x1 === x2) return
-
-    for (let x = x1; x <= x2; x++) setCell(x, y, 'e')
-
-    let xCursor = x1
-    while (xCursor <= x2) {
-      let len = min(rndint(ARROW_MIN_LEN, ARROW_MAX_LEN), x2 - xCursor)
-      if (xCursor + len === x2 - 1) len += 1
-
-
-      arrow(coord(xCursor), coord(y), coord(xCursor + len), coord(y))
-      xCursor += (len+1)
-    }
-  }
-
-  const drawSouthVector = (col) => {
-    __dotStroke = rnd(1, DOT_STROKE_MAX)
-
-    const x = col
-    let y1, y2
-
-    for (let y = 1; y <= CELL_Y; y++) {
-      if (!getCell(x, y) && !y1) y1 = y
-      if (getCell(x, y) && y1) {
-        y2 = y - 1
-        break
-      }
-    }
-
-    if (y1 === y2) return
-
-    for (let y = y1; y <= y2; y++) setCell(x, y, 's')
-
-    let yCursor = y1
-    while (yCursor <= y2) {
-      let len = min(rndint(ARROW_MIN_LEN, ARROW_MAX_LEN), y2 - yCursor)
-      if (yCursor + len === y2 - 1) len += 1
-
-      arrow(coord(x), coord(yCursor), coord(x), coord(yCursor + len))
-      yCursor += (len+1)
-    }
-  }
-
-  const drawNorthVector = (col) => {
-    __dotStroke = rnd(1, DOT_STROKE_MAX)
-
-    const x = col
-    let y1, y2
-
-    for (let y = CELLS-1; y >= CELL_Y; y--) {
-      if (!getCell(x, y) && !y1) y1 = y
-      if (getCell(x, y) && y1) {
-        y2 = y + 1
-        break
-      }
-    }
-
-    if (y1 === y2) return
-
-    for (let y = y1; y >= y2; y--) setCell(x, y, 'n')
-
-    let yCursor = y1
-    while (yCursor >= y2) {
-      let len = min(rndint(ARROW_MIN_LEN, ARROW_MAX_LEN), yCursor - y2)
-      if (yCursor - len === y2 + 1) len += 1
-
-      arrow(coord(x), coord(yCursor), coord(x), coord(yCursor - len))
-      yCursor -= (len+1)
-    }
-  }
+  FAST = false
 
 
   function isComplete() {
     return this.start === this.mid1 && this.end === this.mid2
   }
-  const __vectorRanges = {
+  __vectorRanges = {
     right: { fn: drawWestVector, start: 0, end: CELLS, mid1: CELL_Y, mid2: CELL_Y, isComplete },
     left: { fn: drawEastVector, start: 0, end: CELLS, mid1: CELL_Y, mid2: CELL_Y, isComplete },
     top: { fn: drawSouthVector, start: 0, end: CELLS, mid1: CELL_X, mid2: CELL_X, isComplete },
@@ -342,336 +310,37 @@ function draw() {
       return this.right.isComplete() && this.left.isComplete() && this.top.isComplete() && this.bottom.isComplete()
     }
   }
+}
 
 
-  const drawVectorRange = (v) => {
-    const edge = chance(
-      [
-        __vectorRanges[v].start !== __vectorRanges[v].mid1 ? 1 : 0,
-        ['start', rndint(
-          // __vectorRanges[v].mid1 - __vectorRanges[v].start
-          1, 2
-        )]
-      ],
-      [
-        __vectorRanges[v].start !== __vectorRanges[v].mid1 ? 1 : 0,
-        ['mid1', rndint(
-          // __vectorRanges[v].mid1 - __vectorRanges[v].start
-          1, 2
-        )]
-      ],
-      [
-        __vectorRanges[v].end !== __vectorRanges[v].mid2 ? 1 : 0,
-        ['mid2', rndint(
-          // __vectorRanges[v].end - __vectorRanges[v].mid2
-          1, 2
-        )]
-      ],
-      [
-        __vectorRanges[v].end !== __vectorRanges[v].mid2 ? 1 : 0,
-        ['end', rndint(
-          // __vectorRanges[v].end - __vectorRanges[v].mid2
-          1, 2
-        )]
-      ],
-    )
+function draw() {
+  noLoop()
+  scale(SCALE_ADJ)
+  drawBg()
+  drawDot()
 
-    if (!edge) debugger
-    times(edge[1], t => {
-      __vectorRanges[v][edge[0]] += 1
-      __vectorRanges[v].fn(__vectorRanges[v][edge[0]])
+
+
+  if (LAYOUT === 0) {
+    drawWestVector(CELL_Y)
+    drawEastVector(CELL_Y)
+    drawNorthVector(CELL_X)
+    drawSouthVector(CELL_X)
+
+    fillOutVectorRanges()
+  } else if (LAYOUT === 1) {
+    drawGrid()
+  } else {
+    times(CELLS**2/3, c => {
+      const x = rnd(R)
+      const y = rnd(B)
+      const { angle } = lineStats(POINT_X, POINT_Y, x, y)
+      arrow(
+        ...getXYRotation(angle, CELL_SIZE*rnd(0.5, 3), x, y),
+        x, y
+      )
     })
   }
-
-
-  const fillOutVectorRanges = () => {
-    let i=0
-    while (!__vectorRanges.allComplete() && i < MAX_VECTOR_RANGES) {
-      const r = __vectorRanges.right.isComplete() ? 0 : 1
-      const l = __vectorRanges.left.isComplete() ? 0 : 1
-      const t = __vectorRanges.top.isComplete() ? 0 : 1
-      const b = __vectorRanges.bottom.isComplete() ? 0 : 1
-
-      const direction = chance(
-        [ r, 'right'],
-        [ l, 'left'],
-        [ t, 'top'],
-        [ b, 'bottom'],
-      )
-
-      if (__vectorRanges[direction].isComplete()) debugger
-      drawVectorRange(direction)
-      i++
-    }
-  }
-
-
-
-  drawWestVector(CELL_Y)
-  drawEastVector(CELL_Y)
-  drawNorthVector(CELL_X)
-  drawSouthVector(CELL_X)
-
-  fillOutVectorRanges()
-
-
-  // times(5, t => {
-  //   drawWestVector(CELL_Y + 1 + t)
-  // })
-  //   drawWestVector(CELL_Y + 1 + 8)
-  //   drawWestVector(CELLS - 1)
-  //   drawWestVector(CELLS - 2)
-
-
-  // times(4, t => {
-  //   drawNorthVector(CELL_X + 1 + t)
-  // })
-
-
-  // const vector = (x1, y1, x2, y2) => {
-  //   let direction
-  //   if (x1 < x2) direction = 'w'
-  //   if (x1 > x2) direction = 'e'
-  //   if (y1 < y2) direction = 's'
-  //   if (y1 > y2) direction = 'n'
-
-  // }
-
-
-
-  // let topRightWidth = rndint(1, 10)
-  // let rightTopHeight = rndint(1, 10)
-
-  // times(topRightWidth, t => {
-  //   const x = CELL_X + t + 1;
-
-  //   for (
-  //     var y = T;
-  //     y < B && !getCell(x, y);
-  //     y++
-  //   ) {
-  //     setCell(x, y, 's')
-  //   }
-
-  //   vector(x, T, x, y-1)
-  // })
-
-
-  // times(rightTopHeight, t => {
-  //   const y = CELL_Y - t - 1;
-
-  //   for (
-  //     var x = R;
-  //     x > L && !getCell(x, y);
-  //     x--
-  //   ) {
-  //     setCell(x, y, 'w')
-  //   }
-
-  //   vector(R, y, x+1, y)
-  // })
-
-
-  // times(rndint(1, 10), t => {
-  //   const x = CELL_X + t + 1 + topRightWidth;
-
-  //   for (
-  //     var y = T;
-  //     y < B && !getCell(x, y);
-  //     y++
-  //   ) {
-  //     setCell(x, y, 's')
-  //   }
-
-  //   vector(x, T, x, y-1)
-  // })
-
-
-
-
-
-
-
-
-  // const vectors = [
-  //   {
-  //     name: 'T',
-  //     v: times(CELLS, cx => [
-  //       [cx*CELL_SIZE, 0]
-  //     ]),
-  //   },
-
-  //   {
-  //     name: 'B',
-  //     v: times(CELLS, cx => [
-  //       [cx*CELL_SIZE, CELLS*CELL_SIZE]
-  //     ]),
-  //   },
-
-  //   {
-  //     name: 'L',
-  //     v: times(CELLS, cy => [
-  //       [0, cy*CELL_SIZE]
-  //     ]),
-  //   },
-
-  //   {
-  //     name: 'R',
-  //     v: times(CELLS, cy => [
-  //       [CELLS*CELL_SIZE, cy*CELL_SIZE]
-  //     ]),
-  //   }
-  // ]
-
-
-  // const vectorBase = sample(vectors)
-  // const vectorBaseWidth = rndint(vectorBase.v.length)
-  // const vectorBaseStart = min(rndint(vectorBase.v.length), vectorBase.v.length - vectorBaseWidth)
-
-
-  // times(vectorBaseWidth, _v => {
-  //   const vector = vectorBase.v[v+vectorBaseStart]
-
-  //   const breakFn = {
-  //     T: (cx, cy) => cy < CELL_Y && !getCell(cx, cy),
-  //     B: (cx, cy) => cy > CELL_Y && !getCell(cx, cy),
-  //     L: (cx, cy) => cx < CELL_X && !getCell(cx, cy),
-  //     R: (cx, cy) => cx < CELL_X && !getCell(cx, cy),
-  //   }[vectorBase.name]
-
-
-  //   // let [x, y] = vector[0]
-  //   // while (breakFn(x, y)) {
-
-  //   // }
-
-  // })
-
-
-
-
-
-
-  // // going left <-
-  // times(CELL_Y+1, cy => {
-  //   let cx = CELL_X + 1
-  //   while (cx <= CELLS) {
-  //     const len = min(rndint(ARROW_MIN_LEN, ARROW_MAX_LEN), CELLS-cx)
-
-  //     arrow(
-  //       (cx+len) * CELL_SIZE,
-  //       cy * CELL_SIZE,
-  //       cx * CELL_SIZE,
-  //       cy * CELL_SIZE
-  //     )
-
-  //     times(len, l => setCell(cx+l, cy, 'w'))
-
-  //     cx += (len+1)
-  //   }
-  // })
-
-  // // going right ->
-  // times(CELLS - CELL_Y, cy => {
-  //   let cx = CELL_X - 1
-  //   while (cx >= 0) {
-  //     const len = min(rndint(ARROW_MIN_LEN, ARROW_MAX_LEN), cx)
-  //     arrow(
-  //       (cx-len) * CELL_SIZE,
-  //       POINT_Y+cy * CELL_SIZE,
-  //       cx * CELL_SIZE,
-  //       POINT_Y+cy * CELL_SIZE
-  //     )
-
-  //     cx -= (len+1)
-  //   }
-  // })
-
-  // // going down v
-
-  // times(CELL_X+1, cx => {
-
-  //   let cy = CELL_Y - 1
-  //   while (cy >= 0) {
-  //     const len = min(rndint(ARROW_MIN_LEN, ARROW_MAX_LEN), cy)
-  //     arrow(
-  //       cx * CELL_SIZE,
-  //       (cy-len) * CELL_SIZE,
-  //       cx * CELL_SIZE,
-  //       cy * CELL_SIZE,
-  //     )
-
-
-  //     cy -= (len+1)
-  //   }
-  // })
-
-
-
-  // // going up ^
-  // times(CELLS-CELL_X, cx => {
-
-  //   let cy = CELL_Y + 1
-  //   while (cy <= CELLS) {
-  //     const len = min(rndint(ARROW_MIN_LEN, ARROW_MAX_LEN), CELLS-cy)
-  //     arrow(
-  //       POINT_X+cx * CELL_SIZE,
-  //       (cy+len) * CELL_SIZE,
-  //       POINT_X+cx * CELL_SIZE,
-  //       cy * CELL_SIZE,
-  //     )
-
-  //     cy += (len+1)
-  //   }
-  // })
-
-
-
-
-
-  // cut into 2 sections
-  // cut into 3 sections
-  // cut into 4 sections
-
-
-  // const drawArrow = sample([
-  //   drawArrow1,
-  //   drawArrow2,
-  //   drawArrow3,
-  //   drawArrow4,
-  //   drawArrow5,
-  // ])
-
-
-
-
-  // __dotStroke = rnd(1, DOT_STROKE_MAX)
-
-
-  // const startingDirection = sample(0, HALF_PI, PI, TWO_PI*0.75)
-
-
-
-  // for (let x = L; x <= R+1; x += CELL_SIZE) {
-  //   for (let y = T; y <= B+1; y += CELL_SIZE) {
-  //     drawArrow(x, y)
-  //     // circle(x, y, 1)
-
-  //   }
-  // }
-
-
-  // times(150, (i) => {
-  //   const x = rnd(L, R)
-  //   const y = rnd(T, B)
-  //   drawArrow5(x, y)
-  // })
-
-  // stroke('red')
-  // line (W/2-150, H/2, W/2+150, H/2)
-  // dotLine (W/2-150, H/2, W/2+150, H/2)
-
-
 
 
 
@@ -680,10 +349,203 @@ function draw() {
 }
 
 
+
+
+
+
+
+const drawWestArrow = (x, y, len) => arrow(coord(x), coord(y), coord(x - len), coord(y))
+const drawEastArrow = (x, y, len) => arrow(coord(x), coord(y), coord(x + len), coord(y))
+const drawSouthArrow = (x, y, len) => arrow(coord(x), coord(y), coord(x), coord(y + len))
+const drawNorthArrow = (x, y, len) => arrow(coord(x), coord(y), coord(x), coord(y - len))
+const drawSEArrow = (x, y, len) => arrow(coord(x), coord(y), coord(x + len), coord(y + len))
+const drawNEArrow = (x, y, len) => arrow(coord(x), coord(y), coord(x + len), coord(y - len))
+const drawNWArrow = (x, y, len) => arrow(coord(x), coord(y), coord(x - len), coord(y - len))
+const drawSWArrow = (x, y, len) => arrow(coord(x), coord(y), coord(x - len), coord(y + len))
+
+
+
+
+function drawWestVector (row) {
+  const y = row
+  let x1 , x2
+
+  for (let x = CELLS-1; x >= CELL_X; x--) {
+    if (!getCell(x, y) && !x1) x1 = x
+    if (getCell(x, y) && x1) {
+      x2 = x + 1
+      break
+    }
+  }
+
+  if (x1 === x2) return setCell(x1, y, 'w')
+
+
+  for (let x = x1; x >= x2; x--) setCell(x, y, 'w')
+
+  let xCursor = x1
+  while (xCursor >= x2) {
+    let len = min(rndint(ARROW_MIN_LEN, ARROW_MAX_LEN), xCursor - x2)
+    if (xCursor - len === x2 + 1) len += 1
+
+    drawWestArrow(xCursor, y, len)
+    xCursor -= (len+1)
+  }
+}
+
+function drawEastVector (row) {
+  const y = row
+  let x1 , x2
+
+
+  for (let x = 1; x <= CELL_X; x++) {
+    if ((!getCell(x, y)) && !x1) x1 = x
+    if (getCell(x, y) && x1) {
+      x2 = x - 1
+      break
+    }
+  }
+
+
+
+  if (x1 === x2) return setCell(x1, y, 'e')
+
+  for (let x = x1; x <= x2; x++) setCell(x, y, 'e')
+
+  let xCursor = x1
+  while (xCursor <= x2) {
+    let len = min(rndint(ARROW_MIN_LEN, ARROW_MAX_LEN), x2 - xCursor)
+    if (xCursor + len === x2 - 1) len += 1
+
+
+    drawEastArrow(xCursor, y, len)
+    xCursor += (len+1)
+  }
+}
+
+function drawSouthVector (col) {
+  const x = col
+  let y1 , y2
+
+  for (let y = 1; y <= CELL_Y; y++) {
+    if (!getCell(x, y) && !y1) y1 = y
+    if (getCell(x, y) && y1) {
+      y2 = y - 1
+      break
+    }
+  }
+
+  if (y1 === y2) return setCell(x, y1, 's')
+
+  for (let y = y1; y <= y2; y++) setCell(x, y, 's')
+
+  let yCursor = y1
+  while (yCursor <= y2) {
+    let len = min(rndint(ARROW_MIN_LEN, ARROW_MAX_LEN), y2 - yCursor)
+    if (yCursor + len === y2 - 1) len += 1
+
+    drawSouthArrow(x, yCursor, len)
+    yCursor += (len+1)
+  }
+}
+
+function drawNorthVector (col) {
+  const x = col
+  let y1 , y2
+
+  for (let y = CELLS-1; y >= CELL_Y; y--) {
+    if (!getCell(x, y) && !y1) y1 = y
+    if (getCell(x, y) && y1) {
+      y2 = y + 1
+      break
+    }
+  }
+
+  if (y1 === y2) return setCell(x, y1, 'n')
+
+  for (let y = y1; y >= y2; y--) setCell(x, y, 'n')
+
+  let yCursor = y1
+  while (yCursor >= y2) {
+    let len = min(rndint(ARROW_MIN_LEN, ARROW_MAX_LEN), yCursor - y2)
+    if (yCursor - len === y2 + 1) len += 1
+
+    drawNorthArrow(x, yCursor, len)
+    yCursor -= (len+1)
+  }
+}
+
+
+
+
+
+function drawVectorRange(v) {
+  const v1Closed = __vectorRanges[v].start !== __vectorRanges[v].mid1
+  const v2Closed = __vectorRanges[v].end !== __vectorRanges[v].mid2
+  const edge = chance(
+    [v1Closed, ['start', rndint(1, 2)]],
+    [v1Closed, ['mid1', rndint(1, 2)]],
+    [v2Closed, ['mid2', rndint(1, 2)]],
+    [v2Closed, ['end', rndint(1, 2)]],
+  )
+
+  times(edge[1], t => {
+    __vectorRanges[v][edge[0]] += 1
+    __vectorRanges[v].fn(__vectorRanges[v][edge[0]])
+  })
+}
+
+
+function fillOutVectorRanges() {
+  let i=0
+  while (!__vectorRanges.allComplete() && i < MAX_VECTOR_RANGES) {
+    const r = !__vectorRanges.right.isComplete()
+    const l = !__vectorRanges.left.isComplete()
+    const t = !__vectorRanges.top.isComplete()
+    const b = !__vectorRanges.bottom.isComplete()
+
+    const direction = chance(
+      [r, 'right'],
+      [l, 'left'],
+      [t, 'top'],
+      [b, 'bottom'],
+    )
+    drawVectorRange(direction)
+    i++
+  }
+}
+
+function drawGrid() {
+  const GRID_ARROW_SIZE = rnd(0.3, 0.8)
+  const NE_ARROW = prb(0.1) ? 1 : prb(0.5) ? 0 : rnd(0, 0.25)
+  const SE_ARROW = prb(0.1) ? 1 : prb(0.5) ? 0 : rnd(0, 0.25)
+  const NW_ARROW = prb(0.1) ? 1 : prb(0.5) ? 0 : rnd(0, 0.25)
+  const SW_ARROW = prb(0.1) ? 1 : prb(0.5) ? 0 : rnd(0, 0.25)
+  eachCell((x, y, cx, cy) => {
+    if ([0, CELLS].includes(cx) || [0, CELLS].includes(cy)) return
+    let arrowFn
+    if (cx === CELL_X && cy === CELL_Y) arrowFn = () => {}
+    else if (cx === CELL_X && cy > CELL_Y) arrowFn = drawNorthArrow
+    else if (cx === CELL_X && cy < CELL_Y) arrowFn = drawSouthArrow
+    else if (cx > CELL_X && cy === CELL_Y) arrowFn = drawWestArrow
+    else if (cx < CELL_X && cy === CELL_Y) arrowFn = drawEastArrow
+    else if (cx < CELL_X && cy < CELL_Y) arrowFn = chance([(1-SE_ARROW)/2, drawEastArrow], [(1-SE_ARROW)/2, drawSouthArrow], [SE_ARROW, drawSEArrow])
+    else if (cx < CELL_X && cy > CELL_Y) arrowFn = chance([(1-NE_ARROW)/2, drawEastArrow], [(1-NE_ARROW)/2, drawNorthArrow], [NE_ARROW, drawNEArrow])
+    else if (cx > CELL_X && cy > CELL_Y) arrowFn = chance([(1-NW_ARROW)/2, drawWestArrow], [(1-NW_ARROW)/2, drawNorthArrow], [NW_ARROW, drawNWArrow])
+    else if (cx > CELL_X && cy < CELL_Y) arrowFn = chance([(1-SW_ARROW)/2, drawWestArrow], [(1-SW_ARROW)/2, drawSouthArrow], [SW_ARROW, drawSWArrow])
+
+    arrowFn(cx, cy, GRID_ARROW_SIZE)
+  })
+}
+
+
+
+
+
 function drawBg() {
 
-  // background(HUE + 30, 22, 97)
-  background(HUE + 30, 12, 97)
+  // background()
+  background(COLORS.bg)
   if (FAST) return
 
 
@@ -695,36 +557,47 @@ function drawBg() {
     let strokeSize = baseStrokeSize
     for (let x = L-buffer; x < B+buffer; x += strokeSize) {
       drawBackgroundStroke(x, y, strokeSize)
+
+      // if (prb(SMUDGE)) {
+      //   [x3, y3] = getXYRotation(
+      //     rnd(0, TWO_PI),
+      //     5,
+      //     x,
+      //     y
+      //   )
+      //   stroke(COLORS.stroke)
+
+      //   dotLine(x, y, x3, y3)
+      // }
     }
   }
 
 
-  // stroke(HUE + 30, 22, 97)
-  // for (let x = L; x <= R; x += CELL_SIZE) {
-  //   line(x, T, x, B)
-  // }
+  if (SHOW_GRID) {
 
-  // for (let y = T; y <= B; y += CELL_SIZE) {
-  //   line(L, y, R, y)
-  // }
+    push()
+    stroke(hue(COLORS.stroke), 21, 97, 0.8)
+    for (let x = L; x <= R; x += CELL_SIZE) {
+      line(x, T, x, B)
+    }
+
+    for (let y = T; y <= B; y += CELL_SIZE) {
+      line(L, y, R, y)
+    }
+    pop()
+  }
 }
 
-function drawBorder() {
-  fill(15)
-  stroke(15)
-  const p = CELL_SIZE/2
-  dotLine(L+p, T+p, R-p, T+p)
-  dotLine(L+p, B-p, R-p, B-p)
-  dotLine(L+p, T+p, L+p, B-p)
-  dotLine(R-p, T+p, R-p, B-p)
-}
 
 function drawDot() {
   push()
-  stroke('red')
-  fill('red')
+  noStroke()
+  fill(COLORS.dot)
   if (FAST) circle(POINT_X, POINT_Y, 10)
-  else dotCircle(POINT_X, POINT_Y, 10, true)
+  else {
+    const d = 9 + rnd(9*(24/CELLS))
+    dotCircle(POINT_X, POINT_Y, d, true)
+  }
   pop()
   setCell(CELL_X, CELL_Y, 'r')
 }
@@ -740,39 +613,7 @@ function eachCell(fn) {
   }
 }
 
-function vector(x1, y1, x2, y2) {
-  if (y1 < y2) {
 
-    let y = y2
-    while (y >= y1) {
-      const len = min(rndint(ARROW_MIN_LEN, ARROW_MAX_LEN), abs(y - y1))
-      rndint(
-        1, min(5, y-y2))
-      arrow(
-        coord(x1),
-        coord(y-len),
-        coord(x2),
-        coord(y),
-      )
-
-
-      y -= (len+1)
-    }
-  } else {
-    console.log(x1, y1, x2, y2)
-    arrow(coord(x1), coord(y1), coord(x2), coord(y2))
-  }
-
-  // if (x1 > x2) {
-
-  //     arrow(
-  //       coord(x1),
-  //       coord(y1),
-  //       coord(x2),
-  //       coord(y2),
-  //     )
-  // }
-}
 
 
 
@@ -784,168 +625,23 @@ const coord = c => c * CELL_SIZE
 let __cells = {}
 
 function getCell(x, y) {
-  return __cells[`${x},${y}`]
+  return __cells[`${x||0},${y||0}`]
 }
 
 function setCell(x, y, v) {
-  __cells[`${x},${y}`] = v
+  __cells[`${x||0},${y||0}`] = v
   return v
 }
 
-function markPoints(x1, y1, x2, y2, d) {
-  traverseLine(x1, y1, x2, y2, (x, y) => setCell(x, y, d) )
-}
-
-function traverseLine(x1, y1, x2, y2, fn) {
-  const xDir = x2 - x1 >= 0 ? 1 : -1
-  const yDir = y2 - y1 >= 0 ? 1 : -1
-
-  for (
-    let x = x1;
-    xDir > 0 ? x <= x2 : x >= x2;
-    xDir > 0 ? x++ : x--
-  )
-  for (
-    let y = y1;
-    yDir > 0 ? y <= y2 : y >= y2;
-    yDir > 0 ? y++ : y--
-  ) {
-    if (!fn(x, y)) return
-  }
-}
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// randomly draw arrow pointing diagonally
-function drawArrow1(x, y) {
-  const a = arrowFn(x, y)
-
-  const xL = x < POINT_X
-  const xR = x > POINT_X
-  const xEq = x === POINT_X
-  const yT = y < POINT_Y
-  const yB = y > POINT_Y
-  const yEq = y === POINT_Y
-
-
-  if      (xL && yT)   a.se()
-  else if (xL && yB)   a.ne()
-  else if (xR && yT)   a.sw()
-  else if (xR && yB)   a.nw()
-  else if (xL && yEq)  a.e()
-  else if (xR && yEq)  a.w()
-  else if (xEq && yB)  a.n()
-  else if (xEq && yT)  a.s()
-  else if (xEq && yEq) {}
-}
-
-function drawArrow2(x, y) {
-  const a = arrowFn(x, y)
-
-  const xL = x < POINT_X
-  const xR = x > POINT_X
-  const xEq = x === POINT_X
-  const yT = y < POINT_Y
-  const yB = y > POINT_Y
-  const yEq = y === POINT_Y
-
-
-  if      (xL && yT)   sampleCall([a.s, a.e])
-  else if (xL && yB)   sampleCall([a.n, a.e])
-  else if (xR && yT)   sampleCall([a.s, a.w])
-  else if (xR && yB)   sampleCall([a.n, a.w])
-  else if (xL && yEq)  a.e()
-  else if (xR && yEq)  a.w()
-  else if (xEq && yB)  a.n()
-  else if (xEq && yT)  a.s()
-  else if (xEq && yEq) {}
-}
-
-
-function drawArrow3(x, y) {
-  const a = arrowFn(x, y)
-
-  const xL = x < POINT_X
-  const xR = x > POINT_X
-  const xEq = x === POINT_X
-  const yT = y < POINT_Y
-  const yB = y > POINT_Y
-  const yEq = y === POINT_Y
-
-
-
-  if      (xL && yT)   sampleCall([a.s, a.e, a.se])
-  else if (xL && yB)   sampleCall([a.n, a.e, a.ne])
-  else if (xR && yT)   sampleCall([a.s, a.w, a.sw])
-  else if (xR && yB)   sampleCall([a.n, a.w, a.nw])
-  else if (xL && yEq)  a.e()
-  else if (xR && yEq)  a.w()
-  else if (xEq && yB)  a.n()
-  else if (xEq && yT)  a.s()
-  else if (xEq && yEq) {}
-}
-
-
-const __se = Math.random()
-const __ne = Math.random()
-const __sw = Math.random()
-const __nw = Math.random()
-
-function drawArrow4(x, y) {
-  const a = arrowFn(x, y)
-
-  const xL = x < POINT_X
-  const xR = x > POINT_X
-  const xEq = x === POINT_X
-  const yT = y < POINT_Y
-  const yB = y > POINT_Y
-  const yEq = y === POINT_Y
-
-
-
-  if      (xL && yT)   __se < 0.5 ? a.s() : a.e()
-  else if (xL && yB)   __ne < 0.5 ? a.n() : a.e()
-  else if (xR && yT)   __nw < 0.5 ? a.s() : a.w()
-  else if (xR && yB)   __sw < 0.5 ? a.n() : a.w()
-  else if (xL && yEq)  a.e()
-  else if (xR && yEq)  a.w()
-  else if (xEq && yB)  a.n()
-  else if (xEq && yT)  a.s()
-  else if (xEq && yEq) {}
-}
-
-function drawArrow5(x, y) {
-  const a = arrowFn(x, y)
-  a.dir()
-}
-
-
-
-
-
-
-
-function arrow(x1, y1, x2, y2) {
+function arrow(x1, y1, x2, y2, isInner=false) {
+  stroke(COLORS.stroke)
+  fill(COLORS.stroke)
+  __dotStroke = rnd(DOT_STROKE_MIN, DOT_STROKE_MAX)
   if (FAST) {
     line(x1, y1, x2, y2)
     circle(x2, y2, 4)
@@ -954,11 +650,18 @@ function arrow(x1, y1, x2, y2) {
 
   if (prb(SKIP_RATE)) return
 
-  const _x1 = x1 + rnd(-ARROW_DRIFT, ARROW_DRIFT)
-  const _y1 = y1 + rnd(-ARROW_DRIFT, ARROW_DRIFT)
+  const getDrift = (d=1) => rnd(-ARROW_DRIFT/d, ARROW_DRIFT/d)
 
-  const _x2 = x2 + rnd(-ARROW_DRIFT, ARROW_DRIFT)
-  const _y2 = y2 + rnd(-ARROW_DRIFT, ARROW_DRIFT)
+  const x1Drift = getDrift()
+  const y1Drift = getDrift()
+  const x2Drift = LAYOUT === 1 ? x1Drift + getDrift(2) : getDrift()
+  const y2Drift = LAYOUT === 1 ? y1Drift + getDrift(2) : getDrift()
+
+  const _x1 = x1 + x1Drift
+  const _y1 = y1 + y1Drift
+
+  const _x2 = x2 + x2Drift
+  const _y2 = y2 + y2Drift
 
 
   const { d, angle } = lineStats(_x2, _y2, _x1, _y1)
@@ -966,58 +669,19 @@ function arrow(x1, y1, x2, y2) {
   const [__x2, __y2] = LAZY_CARROTS ? getXYRotation(angle+PI, rnd(3, 10), _x2, _y2) : [_x2, _y2]
   const carrotTurn = LAZY_CARROTS ? posOrNeg() * QUARTER_PI/rnd(7.9, 8.1) : 0
 
-  const [x3, y3] = getXYRotation(angle+carrotTurn-QUARTER_PI/rnd(1.9, 2.1), min(15,d*rnd(0.23, 0.27)), __x2, __y2)
-  const [x4, y4] = getXYRotation(angle+carrotTurn+QUARTER_PI/rnd(1.9, 2.1), min(15,d*rnd(0.23, 0.27)), __x2, __y2)
+  const [x3, y3] = getXYRotation(angle+carrotTurn-QUARTER_PI/(2+rnd(-ARROW_ANGLE_VAR, ARROW_ANGLE_VAR)), min(15,d*rnd(0.23, 0.27)), __x2, __y2)
+  const [x4, y4] = getXYRotation(angle+carrotTurn+QUARTER_PI/(2+rnd(-ARROW_ANGLE_VAR, ARROW_ANGLE_VAR)), min(15,d*rnd(0.23, 0.27)), __x2, __y2)
 
   push()
-    if (!HIDE_LINES) {
-      dotLine(_x1, _y1, _x2, _y2)
-    }
-
-
-    if (!HIDE_CARROTS) {
-      dotLine(__x2, __y2, x3, y3)
-      dotLine(__x2, __y2, x4, y4)
-    }
-
+  dotLine(_x1, _y1, _x2, _y2, 1, prb(DASH_RATE))
+  dotLine(__x2, __y2, x3, y3, 0.25)
+  dotLine(__x2, __y2, x4, y4, 0.25)
   pop()
 }
 
-function arrowFn(x, y) {
-  const drift = 4
-  const left = x-(CELL_SIZE*(1-CELL_PADDING)) + nsrnd(x, y, -drift, drift)
-  const right = x-(CELL_SIZE*CELL_PADDING) + nsrnd(x, y, -drift, drift)
-  const top = y-(CELL_SIZE*(1-CELL_PADDING)) + nsrnd(x, y, -drift, drift)
-  const bottom = y-(CELL_SIZE*CELL_PADDING) + nsrnd(x, y, -drift, drift)
-  const xMid = (left + right)/2 + nsrnd(x, y, -drift, drift)
-  const yMid = (top + bottom)/2 + nsrnd(x, y, -drift, drift)
-
-  const pointSize = CELL_SIZE * 0.25
-
-  const { angle } = lineStats(x, y, POINT_X, POINT_Y)
 
 
 
-  return {
-    se: () => arrow(left, top, right, bottom),
-    ne: () => arrow(left, bottom, right, top),
-    nw: () => arrow(right, bottom, left, top),
-    sw: () => arrow(right, top, left, bottom),
-    n:  () => arrow(xMid, bottom, xMid, top),
-    s:  () => arrow(xMid, top, xMid, bottom),
-    e:  () => arrow(left, yMid, right, yMid),
-    w:  () => arrow(right, yMid, left, yMid),
-    dir: () => arrow(
-      ...getXYRotation(angle+PI, CELL_SIZE*(1-CELL_PADDING), x, y),
-      x, y
-    )
-  }
-}
-
-// randomly draw arrow pointing directly on x/y axis
-// default to horozontal arrows (unless directly under/over)
-// default to vertical arrows (unless left/right)
-// random x/y/diagonal
 
 
 
@@ -1025,10 +689,10 @@ function arrowFn(x, y) {
 function drawBackgroundStroke(x, y, strokeSize) {
   const d = lineStats(x, y, POINT_X, POINT_Y).d/SIZE
 
-
-  stroke(HUE + rnd(25, 35), rnd(3, 7) + 8*d, rnd(96, 100) - 3*d)
+  stroke(COLORS.bgS(d))
   const angle = noise(x, y)
   const offset = 1
+
 
   const [x0, y0] = getXYRotation(
     PI + angle + rnd(-QUARTER_PI, QUARTER_PI),
@@ -1096,7 +760,11 @@ function chance(...chances) {
   const seed = rnd()
   let sum = 0
   for (let i = 0; i < chances.length; i++) {
-    sum += chances[i][0] / total
+    const val =
+      chances[i][0] === true ? 1
+      : chances[i][0] === false ? 0
+      : chances[i][0]
+    sum += val / total
     if (seed <= sum && chances[i][0]) return chances[i][1]
   }
 }
@@ -1114,30 +782,40 @@ const posOrNeg = () => prb(0.5) ? 1 : -1
 
 
 __dotStroke = 1
-function dotLine(x1, y1, x2, y2) {
-  const THICK_VAR = 1.5
-  const TURB = 0.15
+function dotLine(x1, y1, x2, y2, driftFactor=1, dashed=false) {
+  rnd(DOT_STROKE_MIN, DOT_STROKE_MAX)
   const { d, angle } = lineStats(x1, y1, x2, y2)
-  const t = TURB
+  const t = STROKE_TURBULENCE
 
   let x = x1
   let y = y1
+  let skip = false
   for (let i = 0; i <= d; i++) {
-    const _x = x+rnd(-t, t)
-    const _y = y+rnd(-t, t)
+    const [_x, _y] = getXYRotation(
+      angle+HALF_PI,
+      getAngleDrift(x1, y1, i/d, driftFactor * d/16),
+      x+rnd(-t, t),
+      y+rnd(-t, t)
+    )
 
-    circle(_x, _y, nsrnd(_x, _y, __dotStroke*(1-THICK_VAR), __dotStroke*(1+THICK_VAR)));
+    if (i%10 === 0) skip = !skip
+    if (skip && dashed) continue
 
-    // const angleDrift = getAngleDrift(x, y, i/d);
-    ([x, y] = getXYRotation(angle, i+1, x1, y1))
+
+
+    circle(_x, _y, nsrnd(_x, _y, __dotStroke*(1-STROKE_VARIANCE), __dotStroke*(1+STROKE_VARIANCE)));
+
+    // const angleDrift = 0.25;
+    const angleDrift = 0;
+    ([x, y] = getXYRotation(angle+angleDrift, i+1, x1, y1))
   }
+
 }
 
 
 function dotCircle(x, y, d, fill=false) {
   const r = d/2
-  const THICK_VAR = 1.5 * (d/300)
-  const TURB = 0.15
+  const strokeVar = STROKE_VARIANCE * (d/300)
 
   const circumference = d * PI *4
 
@@ -1146,17 +824,17 @@ function dotCircle(x, y, d, fill=false) {
   if (fill) beginShape()
   for (let i = 0; i <= circumference; i++) {
     const angle = i*TWO_PI/circumference
-    const [rx, ry] = getXYRotation(angle, 2, 1000, 1000)
+    const [rx, ry] = getXYRotation(angle, 2, x+1000, y+1000)
     const r = map(
       noise(rx, ry),
       0,
       1,
-      0.9*d/2,
+      map(CHAOS, 0, 1, 1, 0.8)*d/2,
       d/2
     )
 
     const [_x, _y] = getXYRotation(angle, r, x, y)
-    circle(_x, _y, nsrnd(_x, _y, __dotStroke*(1-THICK_VAR), __dotStroke*(1+THICK_VAR)));
+    if (!fill) circle(_x, _y, nsrnd(_x, _y, __dotStroke*(1-strokeVar), __dotStroke*(1+strokeVar)));
 
     if (fill) curveVertex(_x, _y)
 
@@ -1165,12 +843,13 @@ function dotCircle(x, y, d, fill=false) {
 
 }
 
-function getAngleDrift(x, y, prg) {
+function getAngleDrift(x, y, prg, driftFactor) {
+  const driftMagnitude = ARROW_ANGLE_DRIFT_AMOUNT * driftFactor
   return map(
-    noise(...getXYRotation(prg*TWO_PI, 1, x+1000, y+1000)),
+    noise(...getXYRotation(prg*TWO_PI, 0.15, x, y)),
     0,
     1,
-    -QUARTER_PI/2,
-    QUARTER_PI/2,
-  )
+    -driftMagnitude,
+    driftMagnitude,
+  ) * sin(PI*prg)
 }
