@@ -44,6 +44,7 @@
   TODO
     - fix resolution issues
     - wonky dashes
+    - maybe add smudges back in
 
  */
 
@@ -70,6 +71,43 @@ Conspiracy
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+DESCRIPTION
+  A simulation of me pondering the inevitability of it all while I draw the same pattern 100 times.
+  A simulation of me drawing what I wanted this project to look like 100 times.
+
+  Low effort generative art
+
+
+
+
+
+  In this piece, I simulate myself drawing the same doodle 64 times. The doodle consists of drawing a dot on a grid, and then drawing a series of non overlapping arrows pointing in the general direction of the dot.
+
+  the quality of the doodle degrades over time as i grow sick of the routine, and the maddening inevitability of it all starts to sink in.
+
+
+
+
+
+
+Analysis
+  One theme that I've sort of indirectly explored in FIM and Maps (and to a large extent in the FastCash universe) is the invisible role of th author
+  there is a sort of transparent deception ocurring in a lot of my work.
+  in FIM, there is the invisible role of the money printer. this invisible actor, who is never directly called out within the universe of FIM, clearly has a presence. the disclaimer combined with the context suggests that the money printer is not me perse. so if not me, who is drawing the signature, deciding which serial numbers are fancy, deciding the authenticity and estimated value of bills? and who is the one making mistakes when the bill is misprinted? and what are the context of those mistakes?
+  in FastCash and The Giveaway, there are really two stories going on. there's the story that's internal to the universe of the project, and then there's the story of the artist creating the project. but if the artist's creation is external to the universe of the story, then that begs the question of what the internal story creation process is like
+
 */
 
 function keyPressed() {
@@ -88,8 +126,8 @@ function setup() {
   SCALE_ADJ = SIZE/800
 
 
-  W = width/SCALE_ADJ
-  H = height/SCALE_ADJ
+  W = 800
+  H = 800
   L = 0
   R = W
   T = 0
@@ -163,24 +201,22 @@ function setup() {
   SKIP_RATE = map(CHAOS, 0, 1, 0, 0.2)
   STROKE_VARIANCE = map(CHAOS, 0, 1, 0, 0.75)
   STROKE_TURBULENCE = map(CHAOS, 0, 1, 0, 0.15)
-  SMUDGE = prb(CHAOS**3) ? map(CHAOS, 0, 1, 0, 0.001)*CHAOS**3 : 0
+  IS_DARK = prb(0.25)
+  SMUDGE = prb(CHAOS**3) && !IS_DARK ? map(CHAOS, 0, 1, 0, 0.001)*CHAOS**3 : 0
 
   DOT_STROKE_MIN = rndint(1, 7*min(1, 24/CELLS))
   DOT_STROKE_MAX = min(DOT_STROKE_MIN + rndint(4*CHAOS), 9)
   SHOW_GRID = false
 
-  COLORS = chance(
-    // [250, { // night mode
-    [.25, { // night mode
+  COLORS = IS_DARK
+    ? { // night mode
       stroke: 230,
       bg: 15,
       dot: color(0, 57, 90, .95),
       // dot: color(0, 73, 100, .95),
       bgS: () => rnd(8, 18)
-    }],
+    } : { // paper
 
-    [.75, { // paper
-    // [100, { // paper
       stroke: prb(0.7) ? color(0, 0, rnd(10, 20)) : color(210, 65, 30),
       bg: color(HUE + 30, 5, 97),
       dot: color(0, 78, 95, .85),
@@ -189,54 +225,8 @@ function setup() {
         rnd(3, 7) + 0.5*d,
         rnd(93, 100) - 0.5*d
       )
-    }],
+    }
 
-    // [111, { // orange
-    // // [0.1875/5, { // orange
-    //   stroke: color(210, 80, 30),
-    //   bg: color(hfix(30), 85, 95),
-    //   dot: color(165, 80, 45),
-    //   bgS: () => color(hfix(30 + rnd(-5, 5)), 85, 95)
-    // }],
-
-    // // [0.1875/5, { // yellow/purple
-    // [111, { // yellow/purple
-    //   stroke: color(318, 62, 48),
-    //   bg: color(hfix(296+120), 60, 96),
-    //   dot: color(hfix(200), 85, 75),
-    //   bgS: () => color(hfix(296+120 + rnd(-5, 5)), 60, 96)
-    // }],
-
-    // [0.1875/5, { // night mode
-    //   stroke: color(171, 100, 100),
-    //   bg: color(hfix(330), 90, 80),
-    //   dot: color(hfix(240), 100, 50),
-    //   bgS: () => color(hfix(330 + rnd(-5, 5)), 90, 90)
-    // }],
-
-    // [0.1875/5, { // rgb
-    // // [111, { // rgb
-    //   stroke: color(77, 63, 95),
-    //   // stroke: color(hfix(203), 80, 30),
-    //   bg: color(185, 100, 63),
-    //   dot: color(hfix(323), 98, 92),
-    //   // dot: color(hfix(323), 98, 92),
-    //   // bgS: () => color(hfix(77 + rnd(-5, 5)), 63, 95)
-    //   bgS: () => color(hfix(185 + rnd(-5, 5)), 100, 63)
-    // }],
-
-
-
-    // // [111, { // bright rgb
-    // [0.1, { // bright rgb
-    //   stroke: color(270, 90, 30),
-    //   dot: color(11, 96, 73),
-    //   bg: color(185, 100, 63),
-    //   bgS: () => color(hfix(185 + rnd(-5, 5)), 100, 63)
-    // }],
-
-
-  )
 
 
 
@@ -311,7 +301,7 @@ function setup() {
 
 
 
-  FAST = false
+  DEBUG_MODE = false
 
 
   function isComplete() {
@@ -561,35 +551,32 @@ function drawGrid() {
 
 
 function drawBg() {
-
-  // background()
   background(COLORS.bg)
-  if (FAST) return
 
+  if (DEBUG_MODE) return
 
-  const buffer = 5/SCALE_ADJ
-  const baseStrokeSize = 2/SCALE_ADJ
+  const buffer = 5
+  const baseStrokeSize = 2
 
 
   for (let y = T-buffer; y < B+buffer; y += baseStrokeSize) {
     let strokeSize = baseStrokeSize
-    for (let x = L-buffer; x < B+buffer; x += strokeSize) {
+    for (let x = L-buffer; x < R+buffer; x += strokeSize) {
       drawBackgroundStroke(x, y, strokeSize)
 
-      // if (prb(SMUDGE)) {
-      //   [x3, y3] = getXYRotation(
-      //     rnd(0, TWO_PI),
-      //     5,
-      //     x,
-      //     y
-      //   )
-      //   stroke(COLORS.stroke)
+      if (prb(SMUDGE)) {
+        [x3, y3] = getXYRotation(
+          rnd(0, TWO_PI),
+          5,
+          x,
+          y
+        )
+        stroke(COLORS.stroke)
 
-      //   dotLine(x, y, x3, y3)
-      // }
+        dotLine(x, y, x3, y3)
+      }
     }
   }
-
 
   if (SHOW_GRID) {
 
@@ -611,7 +598,7 @@ function drawDot() {
   push()
   noStroke()
   fill(COLORS.dot)
-  if (FAST) circle(POINT_X, POINT_Y, 10)
+  if (DEBUG_MODE) circle(POINT_X, POINT_Y, 10)
   else {
     const d = 9 + rnd(9*(24/CELLS))
     dotCircle(POINT_X, POINT_Y, d, true)
@@ -660,7 +647,7 @@ function arrow(x1, y1, x2, y2, isInner=false) {
   stroke(COLORS.stroke)
   fill(COLORS.stroke)
   __dotStroke = rnd(DOT_STROKE_MIN, DOT_STROKE_MAX)
-  if (FAST) {
+  if (DEBUG_MODE) {
     line(x1, y1, x2, y2)
     circle(x2, y2, 4)
     return
