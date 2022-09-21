@@ -84,6 +84,11 @@ Conspiracy
 
 
 DESCRIPTION
+  A simulation of me drawing 100 variations of the same pattern.
+  My focus and attention to detail wanes with each drawing as the maddening inevitability of it all begins to sink in.
+
+
+
   A simulation of me pondering the inevitability of it all while I draw the same pattern 100 times.
   A simulation of me drawing what I wanted this project to look like 100 times.
 
@@ -110,9 +115,47 @@ Analysis
 
 */
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* 8/29 thoughts
+  - earlier drawings should be straighter, cleaner, denser
+
+
+  "What's the point od it all?"
+
+*/
+
+
+
+
 function keyPressed() {
   if (keyCode === 83) {
-    saveCanvas(__canvas, 'points-' + Date.now(), 'png');
+    saveCanvas(__canvas, 'pointers-' + Date.now(), 'png');
   }
 }
 
@@ -135,10 +178,15 @@ function setup() {
 
   colorMode(HSB, 360, 100, 100)
 
+  MINT_SIZE = 100
+  TOKEN_ID = (Number(tokenData.tokenId) % 1000000)
+  CHAOS = (TOKEN_ID / MINT_SIZE)
+
   CELLS = chance(
-    [1, rndint(5, 8)],
-    [6, rndint(8, 20)],
-    [3, rndint(20, 48)],
+    [TOKEN_ID && 7, rndint(5, 8)],
+    [TOKEN_ID && 25, rndint(8, 14)],
+    [TOKEN_ID && 35, rndint(14, 20)],
+    [33, rndint(20, 48)],
   )
 
   // CELLS = chance(
@@ -166,8 +214,6 @@ function setup() {
 
   // STROKE_VARIANCE = 1.5
 
-  MINT_SIZE = 64
-
 
   MAX_VECTOR_RANGES = chance(
     [1, rnd(3, 20)],
@@ -175,130 +221,86 @@ function setup() {
     [10, rnd(200, 1000)],
     [10, 10000]
   )
-  TOKEN_ID = (Number(tokenData.tokenId) % 1000000)
-  CHAOS = TOKEN_ID / MINT_SIZE
 
   DASH_RATE = chance(
     [3, 1],
-    [6, rnd()],
-    [55, 0]
+    [10, rnd(0.1, 0.25)],
+    [87, 0]
   )
 
+  // const randLayout = CHAOS**15
+  // LAYOUT = chance(
+  //   [(1 - randLayout)*0.9, 0], // standard
+  //   [(1 - randLayout)*0.1, 1], // grid
+  //   [randLayout, 2] // random
+  // )
+
   LAYOUT = chance(
-    [(1 - CHAOS**15)*0.9, 0], // standard
-    [(1 - CHAOS**15)*0.1, 1], // grid
-    [CHAOS**15, 2] // random
+    [85, 0], // standard
+    [TOKEN_ID > 5 && 10, 1], // grid
+    [TOKEN_ID > 5 && 4, 2] // flowy
   )
 
   ARROW_MIN_LEN = prb(0.1) ? CELLS : rndint(1, 5)
   ARROW_MAX_LEN = prb(0.1) ? CELLS : rndint(1, 5) + ARROW_MIN_LEN
-  ARROW_DRIFT = map(CHAOS, 0, 1, 0, 10)
-  ARROW_ANGLE_DRIFT_AMOUNT = map(CHAOS, 0, 1, 0, 1)
-  ARROW_ANGLE_VAR = map(CHAOS, 0, 1, 0, 0.8)
+  ARROW_DRIFT = map(CHAOS, 0, 1, 0, 15)
+
+  // ****** *10?
+  ARROW_ANGLE_DRIFT_AMOUNT = map(CHAOS**2, 0, 1, 0, 2.5)
+
+  ARROW_ANGLE_VAR = map(CHAOS, 0, 1, 0, 1.2)
   LAZY_CARROTS = prb(CHAOS)
 
+  CARROT_TURN = map(CHAOS, 0, 1, 0, 0.1)
+  CARROT_DIST_MIN = map(CHAOS, 0, 1, 0, 5)
+  CARROT_DIST_MAX = map(CHAOS, 0, 1, 0, 18)
 
-  SKIP_RATE = map(CHAOS, 0, 1, 0, 0.2)
-  STROKE_VARIANCE = map(CHAOS, 0, 1, 0, 0.75)
-  STROKE_TURBULENCE = map(CHAOS, 0, 1, 0, 0.15)
+  SQUIGGLEY = prb(0.1)
+
+
+
+  SKIP_RATE = map(CHAOS, 0, 1, 0, 0.3)
+  STROKE_VARIANCE = map(CHAOS, 0, 1, 0, 1.1)
+  STROKE_TURBULENCE = map(CHAOS, 0, 1, 0, 0.25)
   IS_DARK = prb(0.25)
   SMUDGE = prb(CHAOS**3) && !IS_DARK ? map(CHAOS, 0, 1, 0, 0.001)*CHAOS**3 : 0
 
   DOT_STROKE_MIN = rndint(1, 7*min(1, 24/CELLS))
-  DOT_STROKE_MAX = min(DOT_STROKE_MIN + rndint(4*CHAOS), 9)
-  SHOW_GRID = false
+  DOT_STROKE_MAX = min(DOT_STROKE_MIN + rndint(6*CHAOS), 9)
+  SHOW_GRID = prb(0.1)
+  REVERSE_COLORS = prb(0.03)
 
   COLORS = IS_DARK
     ? { // night mode
       stroke: 230,
       bg: 15,
       dot: color(0, 57, 90, .95),
-      // dot: color(0, 73, 100, .95),
-      bgS: () => rnd(8, 18)
-    } : { // paper
-
-      stroke: prb(0.7) ? color(0, 0, rnd(10, 20)) : color(210, 65, 30),
-      bg: color(HUE + 30, 5, 97),
+      bgS: (d, x, y) => color(
+        0,
+        0,
+        rnd(8, 18) + map(noise(x/400, y/400), 0, 1, -2.5, 2.5)
+      ),
+      grid: color(0, 0, 90, 0.25)
+    }
+    : { // paper
+      stroke: color(0, 0, rnd(10, 20)),
+      bg: color(HUE+30, 5, 97),
       dot: color(0, 78, 95, .85),
-      bgS: (d) => color(
+      bgS: (d, x, y) => color(
         HUE + rnd(25, 35),
-        rnd(3, 7) + 0.5*d,
-        rnd(93, 100) - 0.5*d
-      )
+        rnd(3, 7) + 0.5*d + map(noise(x/400, y/400), 0, 1, 0, 5),
+        rnd(93, 100) - 0.5*d - map(noise(x/400, y/400), 0, 1, 0, 5)
+      ),
+      grid: color(HUE+5, 20, 18, 0.2)
+    }
+
+    if (REVERSE_COLORS) {
+      [COLORS.dot, COLORS.stroke] = [COLORS.stroke, COLORS.dot]
     }
 
 
 
-
-
-  // CELLS = rndint(24, 48)
-
-  // ARROW_MIN_LEN = 1
-  // ARROW_MAX_LEN = 5
-  // ARROW_DRIFT = 5
-  // ARROW_ANGLE_DRIFT_AMOUNT = 1
-  // DOT_STROKE_MAX = 1
-  // LAZY_CARROTS = true
-  // SKIP_RATE = 0.2
-  // STROKE_VARIANCE = 1.5
-  // STROKE_TURBULENCE = 0.15
-
-
-
-  // ARROW_MIN_LEN = CELLS
-  // ARROW_MAX_LEN = CELLS
-  // ARROW_DRIFT = 0
-  // ARROW_ANGLE_DRIFT_AMOUNT = 0
-  // DOT_STROKE_MAX = 1
-  // LAZY_CARROTS = false
-  // SKIP_RATE = 0
-  // STROKE_VARIANCE = 0
-  // STROKE_TURBULENCE = 0
-
-
-
-  // ARROW_MIN_LEN = prb(0.2) ? CELLS : rnd(1, 16)
-  // ARROW_MAX_LEN = ARROW_MIN_LEN + rnd(1, 8)
-  // SKIP_RATE = prb(0.2) ? rnd(0, 0.75) : 0
-  // LAZY_CARROTS = prb(0.3)
-  // ARROW_ANGLE_DRIFT_AMOUNT = prb(0.5) ? rnd(0.1, 1.5) : 0
-  // LAZY_CARROTS = prb(0.5)
-  // ARROW_DRIFT = rnd(0, 5)
-  // DOT_STROKE_MAX = rnd(1, 2)
-
-
-
-
-  /*
-
-    all quarters same rule
-    half/half
-    half/quarters
-    quarters
-      - all n/s
-        - grid
-        - vector
-        - single line
-      - all e/w
-        - grid
-        - vector
-        - single line
-      - all diagonal
-      - interlocking vector
-
-      - grid random
-      - grid directional
-      - random placement
-        - grid-random
-        - directional
-
-
-
-
-
-
-  */
-
+  console.log("What's the point of it all?")
 
 
   DEBUG_MODE = false
@@ -326,7 +328,6 @@ function draw() {
   drawDot()
 
 
-
   if (LAYOUT === 0) {
     drawWestVector(CELL_Y)
     drawEastVector(CELL_Y)
@@ -337,21 +338,17 @@ function draw() {
   } else if (LAYOUT === 1) {
     drawGrid()
   } else {
-    times(CELLS**2/3, c => {
-      const x = rnd(R)
-      const y = rnd(B)
-      const { angle } = lineStats(POINT_X, POINT_Y, x, y)
-      arrow(
-        ...getXYRotation(angle, CELL_SIZE*rnd(0.5, 3), x, y),
-        x, y
-      )
-    })
+    drawFlowy()
+    // times(CELLS**2/3, c => {
+    //   const x = rnd(R)
+    //   const y = rnd(B)
+    //   const { angle } = lineStats(POINT_X, POINT_Y, x, y)
+    //   arrow(
+    //     ...getXYRotation(angle, CELL_SIZE*rnd(0.5, 3), x, y),
+    //     x, y
+    //   )
+    // })
   }
-
-
-
-
-
 }
 
 
@@ -368,6 +365,16 @@ const drawSEArrow = (x, y, len) => arrow(coord(x), coord(y), coord(x + len), coo
 const drawNEArrow = (x, y, len) => arrow(coord(x), coord(y), coord(x + len), coord(y - len))
 const drawNWArrow = (x, y, len) => arrow(coord(x), coord(y), coord(x - len), coord(y - len))
 const drawSWArrow = (x, y, len) => arrow(coord(x), coord(y), coord(x - len), coord(y + len))
+const drawDirectionalArrow = (x, y, len, angleMod=0) => {
+  if (x === CELL_X && y === CELL_Y) return
+
+  const cx = coord(x)
+  const cy = coord(y)
+  const { angle } = lineStats(cx, cy, POINT_X, POINT_Y)
+  const [x2, y2] = getXYRotation(angle+angleMod, len*CELL_SIZE, cx, cy)
+
+  arrow(cx, cy, x2, y2)
+}
 
 const getArrowLen = cursorDist => min(rndint(ARROW_MIN_LEN, ARROW_MAX_LEN), cursorDist)
 
@@ -522,17 +529,22 @@ function fillOutVectorRanges() {
 }
 
 function drawGrid() {
-  const GRID_ARROW_SIZE = rnd(0.3, 0.8)
+  const GRID_ARROW_SIZE = rnd(0.4, 0.65)
   const a = () => prb(0.1) ? 1 : prb(0.5) ? 0 : rnd(0, 0.25)
 
   const NE_ARROW = prb(0.1) ? 1 : prb(0.5) ? 0 : rnd(0, 0.25)
   const SE_ARROW = prb(0.1) ? 1 : prb(0.5) ? 0 : rnd(0, 0.25)
   const NW_ARROW = prb(0.1) ? 1 : prb(0.5) ? 0 : rnd(0, 0.25)
   const SW_ARROW = prb(0.1) ? 1 : prb(0.5) ? 0 : rnd(0, 0.25)
+
+  const directional = prb(0.25)
+  const directionalPrb = rnd(0, 0.15)
+
   eachCell((x, y, cx, cy) => {
     if ([0, CELLS].includes(cx) || [0, CELLS].includes(cy)) return
     let arrowFn
-    if (cx === CELL_X && cy === CELL_Y) arrowFn = () => {}
+    if (directional || prb(directionalPrb)) arrowFn = drawDirectionalArrow
+    else if (cx === CELL_X && cy === CELL_Y) arrowFn = () => {}
     else if (cx === CELL_X && cy > CELL_Y) arrowFn = drawNorthArrow
     else if (cx === CELL_X && cy < CELL_Y) arrowFn = drawSouthArrow
     else if (cx > CELL_X && cy === CELL_Y) arrowFn = drawWestArrow
@@ -546,6 +558,115 @@ function drawGrid() {
   })
 }
 
+// function drawFlowy3() {
+//   ARROW_DRIFT = ARROW_DRIFT * 0.1
+//   STROKE_VARIANCE = STROKE_VARIANCE * 0.5
+//   DOT_STROKE_MAX = min(DOT_STROKE_MIN + rndint(3*CHAOS), 5)
+
+
+//   const GRID_ARROW_SIZE = rnd(0.4, 0.65)
+
+//   eachCell((x, y, cx, cy) => {
+//     drawDirectionalArrow(cx, cy, GRID_ARROW_SIZE, map(noise(x/500, y/500), 0, 1, -0.1, 0.1))
+//   })
+
+
+  // const layers = 40
+  // const arrowLen = 20
+  // const arrowPadding = 5
+
+  // times(layers, l => {
+  //   const nArrows = l * 3
+
+  //   times(nArrows, a => {
+  //     const modifier =  rnd(0.9, 1.1)
+  //     const len = arrowLen * modifier
+  //     const padding = modifier
+  //     const startAngle = a * TWO_PI/nArrows
+  //     const [x1, y1] = getXYRotation(startAngle + rnd(-0.1, 0.1), 20 + l*(arrowLen+padding), POINT_X, POINT_Y)
+
+  //     const endAngle = PI + startAngle + (l * map(noise(x1/500, y1/500), 0, 1, -0.1, 0.1))
+  //     const [x2, y2] = getXYRotation(endAngle, arrowLen, x1, y1)
+
+  //     arrow(x1, y1, x2, y2)
+  //   })
+  // })
+// }
+
+// function drawFlowy2() {
+//   ARROW_DRIFT = ARROW_DRIFT * 0.1
+//   STROKE_VARIANCE = STROKE_VARIANCE * 0.5
+//   DOT_STROKE_MAX = min(DOT_STROKE_MIN + rndint(3*CHAOS), 5)
+
+//   const layers = 40
+//   const arrowLen = 20
+//   const arrowPadding = 5
+//   times(layers, l => {
+//     const nArrows = l * 2 + rndint(0, 4)
+
+//     times(nArrows, a => {
+//       const modifier = rnd(0.9, 2)
+//       const len = arrowLen * modifier
+//       const padding = arrowPadding * modifier + 5
+//       const startAngle = a * TWO_PI/nArrows
+//       const [x1, y1] = getXYRotation(startAngle + rnd(-0.1, 0.1), 20 + l*(arrowLen)+padding, POINT_X, POINT_Y)
+
+//       const endAngle = PI + startAngle + (l * map(noise(x1/500, y1/500), 0, 1, -0.025, 0.025))
+//       const [x2, y2] = getXYRotation(endAngle, arrowLen, x1, y1)
+
+//       arrow(x1, y1, x2, y2)
+//     })
+//   })
+// }
+
+
+
+
+
+
+function drawFlowy() {
+  ARROW_DRIFT = ARROW_DRIFT * 0.1
+  STROKE_VARIANCE = STROKE_VARIANCE * 0.5
+  DOT_STROKE_MAX = min(DOT_STROKE_MIN + rndint(3*CHAOS), 5)
+
+  const c2 = CHAOS**2.5
+  const paddingMin = 15
+  const paddingMax = paddingMin + (c2 * 30)
+  const lenMin = 30 - (c2*20)
+  const lenMax = 30 + (c2*20)
+  const flow = CHAOS * 0.4
+
+  // const nPaths = 4
+  const nPaths = CELLS*4
+  times(nPaths, t => {
+    if (prb(0.66 *CHAOS) && t) return
+    const startOffset = rnd(0, 500)
+    let angle = t*TWO_PI/nPaths //+ rnd(-TWO_PI, TWO_PI)/(nPaths*6)
+    let [x2, y2] = getXYRotation(angle, startOffset+rnd(paddingMin, paddingMax)*2, POINT_X, POINT_Y)
+    let [x1, y1] = getXYRotation(angle, rnd(lenMin, lenMax), x2, y2)
+
+    let i = 0
+
+    while (x2 > L && x2 < R && y2 > T && y2 < B && i < 50) {
+      arrow(x1, y1, x2, y2)
+
+      angle = lineStats(x2, y2, x1, y1).angle + map(
+        noise(x2/20, y2/20),
+        0,
+        1,
+        -flow,
+        flow
+      )
+
+      ;([x2, y2] = getXYRotation(angle, rnd(paddingMin, paddingMax), x1, y1))
+
+      ;([x1, y1] = getXYRotation(angle, rnd(lenMin, lenMax), x2, y2))
+
+      i++
+    }
+  })
+
+}
 
 
 
@@ -581,7 +702,7 @@ function drawBg() {
   if (SHOW_GRID) {
 
     push()
-    stroke(hue(COLORS.stroke), 21, 97, 0.8)
+    stroke(COLORS.grid)
     for (let x = L; x <= R; x += CELL_SIZE) {
       line(x, T, x, B)
     }
@@ -671,14 +792,15 @@ function arrow(x1, y1, x2, y2, isInner=false) {
 
   const { d, angle } = lineStats(_x2, _y2, _x1, _y1)
 
-  const [__x2, __y2] = LAZY_CARROTS ? getXYRotation(angle+PI, rnd(3, 10), _x2, _y2) : [_x2, _y2]
-  const carrotTurn = LAZY_CARROTS ? posOrNeg() * QUARTER_PI/rnd(7.9, 8.1) : 0
+  const [__x2, __y2] = getXYRotation(angle+PI, rnd(CARROT_DIST_MIN, CARROT_DIST_MAX), _x2, _y2)
+  // const carrotTurn = LAZY_CARROTS ? posOrNeg() * QUARTER_PI/(rnd(7.9, 8.1)) : 0
+  const carrotTurn = CARROT_TURN + rnd(-0.005, 0.005)
 
   const [x3, y3] = getXYRotation(angle+carrotTurn-QUARTER_PI/(2+rnd(-ARROW_ANGLE_VAR, ARROW_ANGLE_VAR)), min(15,d*rnd(0.23, 0.27)), __x2, __y2)
   const [x4, y4] = getXYRotation(angle+carrotTurn+QUARTER_PI/(2+rnd(-ARROW_ANGLE_VAR, ARROW_ANGLE_VAR)), min(15,d*rnd(0.23, 0.27)), __x2, __y2)
 
   push()
-  dotLine(_x1, _y1, _x2, _y2, 1, prb(DASH_RATE))
+  dotLine(_x1, _y1, _x2, _y2, 1, prb(DASH_RATE), SQUIGGLEY)
   dotLine(__x2, __y2, x3, y3, 0.25)
   dotLine(__x2, __y2, x4, y4, 0.25)
   pop()
@@ -694,7 +816,7 @@ function arrow(x1, y1, x2, y2, isInner=false) {
 function drawBackgroundStroke(x, y, strokeSize) {
   const d = lineStats(x, y, POINT_X, POINT_Y).d/SIZE
 
-  stroke(COLORS.bgS(d))
+  stroke(COLORS.bgS(d, x, y))
   const angle = noise(x, y)
   const offset = 1
 
@@ -787,8 +909,7 @@ const posOrNeg = () => prb(0.5) ? 1 : -1
 
 
 __dotStroke = 1
-function dotLine(x1, y1, x2, y2, driftFactor=1, dashed=false) {
-  rnd(DOT_STROKE_MIN, DOT_STROKE_MAX)
+function dotLine(x1, y1, x2, y2, driftFactor=1, dashed=false, squiggle=false) {
   const { d, angle } = lineStats(x1, y1, x2, y2)
   const t = STROKE_TURBULENCE
 
@@ -798,28 +919,27 @@ function dotLine(x1, y1, x2, y2, driftFactor=1, dashed=false) {
   for (let i = 0; i <= d; i++) {
     const [_x, _y] = getXYRotation(
       angle+HALF_PI,
-      getAngleDrift(x1, y1, i/d, driftFactor * d/16),
+      getAngleDrift(x1, y1, i/d,
+        squiggle
+        ? sin(i/PI) * map(CHAOS, 0, 1, 1, 9) * map(DOT_STROKE_MIN, 1, 7, 0.5, 3)
+        : driftFactor * d/16
+      ),
       x+rnd(-t, t),
       y+rnd(-t, t)
     )
 
-    if (i%10 === 0) skip = !skip
+    if (i && i%10 === 0) skip = !skip
     if (skip && dashed) continue
-
-
 
     circle(_x, _y, nsrnd(_x, _y, __dotStroke*(1-STROKE_VARIANCE), __dotStroke*(1+STROKE_VARIANCE)));
 
-    // const angleDrift = 0.25;
-    const angleDrift = 0;
-    ([x, y] = getXYRotation(angle+angleDrift, i+1, x1, y1))
+    ([x, y] = getXYRotation(angle, i+1, x1, y1))
   }
 
 }
 
 
 function dotCircle(x, y, d, fill=false) {
-  const r = d/2
   const strokeVar = STROKE_VARIANCE * (d/300)
 
   const circumference = d * PI *4
@@ -845,7 +965,6 @@ function dotCircle(x, y, d, fill=false) {
 
   }
   if (fill) endShape()
-
 }
 
 function getAngleDrift(x, y, prg, driftFactor) {
