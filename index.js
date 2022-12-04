@@ -537,7 +537,7 @@ function drawGrid() {
   const NW_ARROW = prb(0.1) ? 1 : prb(0.5) ? 0 : rnd(0, 0.25)
   const SW_ARROW = prb(0.1) ? 1 : prb(0.5) ? 0 : rnd(0, 0.25)
 
-  const directional = prb(0.25)
+  const directional = prb(0.1)
   const directionalPrb = rnd(0, 0.15)
 
   eachCell((x, y, cx, cy) => {
