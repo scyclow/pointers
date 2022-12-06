@@ -215,7 +215,8 @@ function setup() {
   // STROKE_VARIANCE = 1.5
 
 
-  MAX_VECTOR_RANGES = chance(
+  MAX_VECTOR_RANGES = 20
+  chance(
     [1, rnd(3, 20)],
     [4, rnd(20, 200)],
     [10, rnd(200, 1000)],
@@ -255,7 +256,7 @@ function setup() {
   CARROT_DIST_MIN = map(CHAOS, 0, 1, 0, 5)
   CARROT_DIST_MAX = map(CHAOS, 0, 1, 0, 18)
 
-  SQUIGGLEY = prb(0.07)
+  SQUIGGLEY = prb(0.1)
 
 
 
@@ -321,6 +322,11 @@ function setup() {
 }
 
 
+let nunito;
+function preload() {
+  nunito = loadFont('Nunito/static/Nunito-SemiBold.ttf');
+}
+
 function draw() {
   noLoop()
   scale(SCALE_ADJ)
@@ -349,10 +355,60 @@ function draw() {
     //   )
     // })
   }
+
+  textFont(nunito)
+  textSize(50)
+  text('Pointers', 130, 464)
+
+  textSize(35)
+  text('Friday 12/9', 520, 469)
+
+  text('Dutch Auction', 126, 603)
+  text('1:30pm EST', 510, 600)
+
+  text('2.0 ETH', 168, 738)
+  text('0.1 ETH', 550, 736)
+
+
+  arrow(341, 451, 498, 455, true)
+  arrow(223, 482, 226, 569, true)
+  arrow(601, 490, 600, 557, true)
+  arrow(370, 591, 490, 590, true)
+  arrow(222, 617, 223, 696, true)
+  arrow(312, 721, 531, 721, true)
+
+
+
+
+  drawEastArrow(8, 3, 9)
+  drawEastArrow(9, 4, 8)
+
+
+  drawSouthArrow(3, 3, 3)
+  drawSouthArrow(4, 3, 3)
+  drawSouthArrow(5, 3, 3)
+  drawSouthArrow(6, 3, 3)
+  drawSouthArrow(7, 3, 3)
+  drawSouthArrow(8, 4, 2)
+  drawSouthArrow(9, 5, 1)
+  drawSouthArrow(10, 5, 1)
+  drawSouthArrow(11, 5, 1)
+  drawSouthArrow(11, 5, 1)
+  drawSouthArrow(12, 5, 1)
+  drawSouthArrow(13, 5, 1)
+  drawSouthArrow(14, 5, 1)
+  drawSouthArrow(15, 5, 1)
+  drawSouthArrow(16, 5, 1)
+
+
+  // arrow(129, 122, 128, 259, true)
+
 }
 
 
-
+function mouseClicked() {
+  console.log(mouseX/SCALE_ADJ, mouseY/SCALE_ADJ)
+}
 
 
 
@@ -764,7 +820,7 @@ function setCell(x, y, v) {
 
 
 
-function arrow(x1, y1, x2, y2, isInner=false) {
+function arrow(x1, y1, x2, y2, ignoreSkip=false) {
   stroke(COLORS.stroke)
   fill(COLORS.stroke)
   __dotStroke = rnd(DOT_STROKE_MIN, DOT_STROKE_MAX)
@@ -774,7 +830,7 @@ function arrow(x1, y1, x2, y2, isInner=false) {
     return
   }
 
-  if (prb(SKIP_RATE)) return
+  if (!ignoreSkip && prb(SKIP_RATE)) return
 
   const getDrift = (d=1) => rnd(-ARROW_DRIFT/d, ARROW_DRIFT/d)
 
